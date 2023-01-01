@@ -61,19 +61,18 @@ namespace MSBuildService
             // C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\System.Memory.dll is 4.0.1.1, token  cc7b13ffcd2ddd51
 
             /*
+             * Can be System.Memory 4.0.1.2 also.
+             * 
+             * 
  <assemblyBinding xmlns="urn:schemas-microsoft-com:asm.v1">
       <dependentAssembly>
         <assemblyIdentity name="System.Collections.Immutable" publicKeyToken="b03f5f7f11d50a3a" culture="neutral" />
         <bindingRedirect oldVersion="0.0.0.0-5.0.0.0" newVersion="5.0.0.0" />
       </dependentAssembly>
-    </assemblyBinding>
-    <assemblyBinding xmlns="urn:schemas-microsoft-com:asm.v1">
       <dependentAssembly>
         <assemblyIdentity name="System.Memory" publicKeyToken="cc7b13ffcd2ddd51" culture="neutral" />
         <bindingRedirect oldVersion="0.0.0.0-4.0.1.1" newVersion="4.0.1.1" />
       </dependentAssembly>
-    </assemblyBinding>
-    <assemblyBinding xmlns="urn:schemas-microsoft-com:asm.v1">
       <dependentAssembly>
         <assemblyIdentity name="System.Runtime.CompilerServices.Unsafe" publicKeyToken="b03f5f7f11d50a3a" culture="neutral" />
         <bindingRedirect oldVersion="0.0.0.0-5.0.0.0" newVersion="5.0.0.0" />
@@ -116,7 +115,10 @@ namespace MSBuildService
 
             filePath = filePath.Replace("/", "\\");
 
+            //var matchingInclude = options.ProjectFileMatchFullPath ? filePath : Path.GetFileName(filePath);
+            //var matchingInclude = filePath;
             var fileName = Path.GetFileName(filePath);
+            //var directory = Path.GetDirectoryName(filePath);
 
             var found = ProjectCollection.GlobalProjectCollection.LoadedProjects.FirstOrDefault(project =>
             {
@@ -132,7 +134,11 @@ namespace MSBuildService
                 {
                     return project.Items.Where(i => i.ItemType == "ClCompile" || i.ItemType == "ClInclude").Any(i =>
                     {
-                        return i.EvaluatedInclude == fileName;
+                        // TODO: Can we move this check up to per-project or even per-solution?
+                        if (Path.IsPathRooted(i.EvaluatedInclude))
+                            return i.EvaluatedInclude == filePath;
+                        else
+                            return i.EvaluatedInclude == fileName;
                     });
                 }
 
